@@ -12,17 +12,19 @@ from bson import ObjectId
 from utilis import hash_password, verify_password, create_access_token
 from user import User, UserOut, Token
 
+from jose import jwt , JWTError
+
 
 app = FastAPI()
 
 SECRET_KEY = "secret_key"
-ALGORYTHM = "HS256"
+ALGORITHM = "HS256"
 
 oauth_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 async def get_current_user(token: str = Depends(oauth_scheme)):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORYTHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id == None:
             raise HTTPException(status_code=401, detail="unauth")
@@ -57,7 +59,7 @@ def register(user: User) -> UserOut:
     return UserOut(email=user.email, id=str(result.inserted_id))
 
 @app.post("/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends()) -> str:
+def login(form_data: OAuth2PasswordRequestForm = Depends()) -> Token :
     db_user = user_collection.find_one({"email": form_data.username})
 
 
@@ -69,7 +71,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()) -> str:
 
 @app.get("/me")
 def read_data_me(current_user: dict = Depends(get_current_user)):
-    return UserOut(id = str(current_user["_id"], email = current_user["email"]))
+    return UserOut(id=str(current_user["_id"]), email=current_user["email"])
+
 
 
 
